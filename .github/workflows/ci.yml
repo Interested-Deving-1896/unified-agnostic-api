@@ -18,7 +18,7 @@ jobs:
       shell: ${{ steps.filter.outputs.shell }}
       config: ${{ steps.filter.outputs.config }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -39,7 +39,7 @@ jobs:
     if: needs.changes.outputs.shell == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install ShellCheck
         run: sudo apt-get install -y shellcheck
       - name: Lint all shell scripts
@@ -55,7 +55,7 @@ jobs:
     if: needs.changes.outputs.config == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate routes.yml
         run: python3 -c "import yaml; yaml.safe_load(open('config/routes.yml'))"
       - name: Check all route scripts exist
@@ -82,13 +82,19 @@ jobs:
     if: always() && !failure()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Make scripts executable
         run: find . -name '*.sh' -exec chmod +x {} \;
       - name: Test health adapter
         run: |
           out=$(bash adapters/meta/health.sh)
-          echo "$out" | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['status']=='ok', f'bad status: {d}'"
+          echo "$out" | python3 -c "import json, sys; 
+          try:
+              d = json.load(sys.stdin); 
+              assert d['status']=='ok', f'bad status: {d}'
+          except json.JSONDecodeError:
+              print('Output is not valid JSON:', out)
+              sys.exit(1)"
           echo "health: ok"
       - name: Test system-info adapter
         run: |
