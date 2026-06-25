@@ -79,7 +79,7 @@ jobs:
   adapter-tests:
     name: Adapter smoke tests
     needs: [shellcheck, validate-config]
-    if: always() && !failure()
+    if: always() && !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -123,7 +123,10 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if echo "${{ join(needs.*.result, ' ') }}" | grep -qw "failure"; then
+          results="${{ join(needs.*.result, ' ') }}"
+          echo "Job results: $results"
+          if echo "$results" | grep -qw "failure"; then
+            echo "One or more required jobs failed."
             exit 1
           fi
-          echo "All checks passed"
+          echo "All checks passed (skipped jobs are acceptable)."
