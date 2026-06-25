@@ -23,6 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 source "$REPO_ROOT/lib/log.sh"
+source "$REPO_ROOT/lib/shared.sh"
 source "$REPO_ROOT/lib/routes.sh"
 
 UAA_PORT="${UAA_PORT:-8080}"
@@ -48,6 +49,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 export UAA_PORT UAA_HOST UAA_LOG REPO_ROOT
+
+# Wire shared.sh toggle system — point at config/toggles.yml if it exists
+UAA_TOGGLES_FILE="${UAA_TOGGLES_FILE:-$REPO_ROOT/config/toggles.yml}"
+[[ -f "$UAA_TOGGLES_FILE" ]] && export UAA_TOGGLES_FILE || unset UAA_TOGGLES_FILE
 
 # ── Merge route manifests ─────────────────────────────────────────────────────
 DEFAULT_ROUTES="$REPO_ROOT/config/routes.yml"
