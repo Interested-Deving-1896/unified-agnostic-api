@@ -16,6 +16,7 @@ ADAPTER_NAME="$(basename "$ADAPTER_DIR")"
 REPO_ROOT="${REPO_ROOT:-$(cd "$ADAPTER_DIR/../.." && pwd)}"
 
 source "$REPO_ROOT/lib/log.sh"
+source "$REPO_ROOT/lib/shared.sh"
 source "$REPO_ROOT/lib/http.sh"
 
 # ── Input helpers ─────────────────────────────────────────────────────────────

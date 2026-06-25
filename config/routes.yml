@@ -4,6 +4,8 @@
 # The server/start.sh reads this file to configure shell2http, webhook, or CGI.
 #
 # Fields:
+#   toggle   — feature toggle name; route is skipped when toggle is disabled
+#              in config/toggles.yml (see also: scripts/scaffold-consumer.sh)
 #   path     — URL path (shell2http supports :param placeholders)
 #   script   — path to the adapter script, relative to repo root
 #   method   — HTTP method (GET|POST|PUT|DELETE|ANY); enforced inside the script
