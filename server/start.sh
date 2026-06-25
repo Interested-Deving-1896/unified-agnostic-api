@@ -1,85 +1,87 @@
 #!/usr/bin/env bash
 # server/start.sh — unified-agnostic-api HTTP server
 #
-# Starts the API server using shell2http (preferred) or falls back to the
-# bash-api-server CGI pattern if shell2http is not installed.
+# Starts the API server using shell2http (preferred), webhook, or CGI.
+# Supports multiple --routes files and toggle-based route filtering.
 #
 # Usage:
-#   ./server/start.sh [--port PORT] [--host HOST] [--backend shell2http|cgi]
+#   ./server/start.sh [--port PORT] [--host HOST] [--backend BACKEND]
+#   ./server/start.sh --routes config/routes.yml --routes extra/routes.yml
 #   UAA_PORT=9090 ./server/start.sh
 #
 # Environment:
 #   UAA_PORT     — listen port (default: 8080)
 #   UAA_HOST     — listen host (default: 0.0.0.0)
-#   UAA_BACKEND  — http backend: shell2http | cgi (default: shell2http)
+#   UAA_BACKEND  — http backend: shell2http | cgi | webhook (default: shell2http)
 #   UAA_LOG      — log level: debug | info | warn (default: info)
-#   UAA_AUTH     — bearer token for auth (optional; disables auth if unset)
+#   UAA_AUTH     — bearer token for auth (optional)
+#   UAA_TOGGLES  — path to toggles.yml (default: config/toggles.yml)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# shellcheck source=../lib/log.sh
 source "$REPO_ROOT/lib/log.sh"
-# shellcheck source=../lib/routes.sh
 source "$REPO_ROOT/lib/routes.sh"
 
 UAA_PORT="${UAA_PORT:-8080}"
 UAA_HOST="${UAA_HOST:-0.0.0.0}"
 UAA_BACKEND="${UAA_BACKEND:-shell2http}"
 UAA_LOG="${UAA_LOG:-info}"
+UAA_TOGGLES="${UAA_TOGGLES:-$REPO_ROOT/config/toggles.yml}"
 
-# ── Argument parsing ──────────────────────────────────────────────────────────
+# Collect --routes arguments; default to config/routes.yml
+EXTRA_ROUTES=()
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --port)    UAA_PORT="$2";    shift 2 ;;
     --host)    UAA_HOST="$2";    shift 2 ;;
     --backend) UAA_BACKEND="$2"; shift 2 ;;
     --log)     UAA_LOG="$2";     shift 2 ;;
-    --help|-h)
-      grep '^#' "$0" | sed 's/^# \?//'
-      exit 0
-      ;;
+    --toggles) UAA_TOGGLES="$2"; shift 2 ;;
+    --routes)  EXTRA_ROUTES+=("$2"); shift 2 ;;
+    --help|-h) grep '^#' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) warn "unknown argument: $1"; shift ;;
   esac
 done
 
 export UAA_PORT UAA_HOST UAA_LOG REPO_ROOT
 
-info "unified-agnostic-api server starting"
-info "  backend : $UAA_BACKEND"
-info "  listen  : $UAA_HOST:$UAA_PORT"
-info "  root    : $REPO_ROOT"
+# ── Merge route manifests ─────────────────────────────────────────────────────
+DEFAULT_ROUTES="$REPO_ROOT/config/routes.yml"
+[[ -f "$DEFAULT_ROUTES" ]] || { error "config/routes.yml not found"; exit 1; }
 
-# ── Load route manifest ───────────────────────────────────────────────────────
-ROUTES_FILE="$REPO_ROOT/config/routes.yml"
-[[ -f "$ROUTES_FILE" ]] || { error "config/routes.yml not found"; exit 1; }
+ALL_ROUTES=("$DEFAULT_ROUTES" "${EXTRA_ROUTES[@]}")
+MERGED_ROUTES="/tmp/uaa-merged-routes-$$.yml"
+trap 'rm -f "$MERGED_ROUTES"' EXIT
+
+merge_routes_files "$UAA_TOGGLES" "$MERGED_ROUTES" "${ALL_ROUTES[@]}"
+
+info "unified-agnostic-api server starting"
+info "  backend  : $UAA_BACKEND"
+info "  listen   : $UAA_HOST:$UAA_PORT"
+info "  root     : $REPO_ROOT"
+info "  routes   : ${#ALL_ROUTES[@]} file(s) merged"
+info "  toggles  : $UAA_TOGGLES"
 
 # ── Backend dispatch ──────────────────────────────────────────────────────────
 case "$UAA_BACKEND" in
   shell2http)
     if ! command -v shell2http &>/dev/null; then
       error "shell2http not found. Install: go install github.com/msoap/shell2http@latest"
-      error "Or set UAA_BACKEND=cgi to use the Apache CGI fallback."
       exit 1
     fi
-    # Build shell2http route args from routes.yml
-    mapfile -t ROUTE_ARGS < <(routes_to_shell2http_args "$ROUTES_FILE")
-    info "registering ${#ROUTE_ARGS[@]} route(s)"
-    exec shell2http \
-      -host "$UAA_HOST" \
-      -port "$UAA_PORT" \
-      -log \
-      "${ROUTE_ARGS[@]}"
+    mapfile -t ROUTE_ARGS < <(routes_to_shell2http_args "$MERGED_ROUTES")
+    info "registering ${#ROUTE_ARGS[@]} route arg(s)"
+    exec shell2http -host "$UAA_HOST" -port "$UAA_PORT" -log "${ROUTE_ARGS[@]}"
     ;;
 
   cgi)
-    # Fallback: Apache CGI mode (bash-api-server pattern)
-    # Requires Apache with mod_cgi enabled and CGI_DIR configured.
     CGI_DIR="${CGI_DIR:-/usr/lib/cgi-bin/uaa}"
     info "deploying CGI scripts to $CGI_DIR"
-    "$SCRIPT_DIR/deploy-cgi.sh" "$CGI_DIR"
+    "$SCRIPT_DIR/deploy-cgi.sh" "$CGI_DIR" "$MERGED_ROUTES"
     info "CGI deployed. Configure Apache to serve $CGI_DIR on port $UAA_PORT."
     ;;
 
@@ -88,13 +90,10 @@ case "$UAA_BACKEND" in
       error "webhook not found. Install: go install github.com/adnanh/webhook@latest"
       exit 1
     fi
-    HOOKS_FILE="$REPO_ROOT/config/hooks.json"
-    [[ -f "$HOOKS_FILE" ]] || { error "config/hooks.json not found"; exit 1; }
-    exec webhook \
-      -hooks "$HOOKS_FILE" \
-      -port "$UAA_PORT" \
-      -ip "$UAA_HOST" \
-      -verbose
+    HOOKS_FILE="/tmp/uaa-hooks-$$.json"
+    trap 'rm -f "$MERGED_ROUTES" "$HOOKS_FILE"' EXIT
+    routes_to_hooks_json "$MERGED_ROUTES" > "$HOOKS_FILE"
+    exec webhook -hooks "$HOOKS_FILE" -port "$UAA_PORT" -ip "$UAA_HOST" -verbose
     ;;
 
   *)
