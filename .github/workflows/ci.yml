@@ -93,7 +93,7 @@ jobs:
               d = json.load(sys.stdin); 
               assert d['status']=='ok', f'bad status: {d}'
           except json.JSONDecodeError:
-              print('Output is not valid JSON:', out)
+              print('Output is not valid JSON:', sys.stdin.read())
               sys.exit(1)"
           echo "health: ok"
       - name: Test system-info adapter
