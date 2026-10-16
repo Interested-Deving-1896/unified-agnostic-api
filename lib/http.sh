@@ -20,7 +20,8 @@ UAA_BACKEND="${UAA_BACKEND:-shell2http}"
 
 # respond_json STATUS BODY
 respond_json() {
-  local status="${1:-200}" body="${2:-{}}"
+  local status="${1:-200}" body="${2:-}"
+  [[ -n "$body" ]] || body="{}"
   _emit_response "$status" "application/json" "$body"
 }
 
