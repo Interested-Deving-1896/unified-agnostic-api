@@ -120,7 +120,7 @@ The server and adapters are configured through environment variables and YAML fi
 | `UAA_BACKEND` | `shell2http` | HTTP backend: `shell2http`, `cgi`, or `webhook` |
 | `UAA_LOG` | `info` | Log level: `debug`, `info`, or `warn` |
 | `UAA_AUTH` | unset | Optional bearer token used by protected routes |
-| `UAA_TOGGLES` | `config/toggles.yml` | Toggle configuration path used by the launcher |
+| `UAA_TOGGLES_FILE` | `config/toggles.yml` | Optional path to the feature-toggle configuration file |
 
 You can set variables inline for a single launch:
 
