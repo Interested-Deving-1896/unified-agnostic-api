@@ -84,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Make scripts executable
-        run: find . -name '*.sh' -exec chmod +x {} \\;
+        run: find . -name '*.sh' -exec chmod +x {} \;
       - name: Test health adapter
         run: |
           out=$(bash adapters/meta/health.sh)
