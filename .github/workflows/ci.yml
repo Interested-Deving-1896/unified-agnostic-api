@@ -84,17 +84,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Make scripts executable
-        run: find . -name '*.sh' -exec chmod +x {} \;
+        run: find . -name '*.sh' -exec chmod +x {} \\;
       - name: Test health adapter
         run: |
           out=$(bash adapters/meta/health.sh)
-          echo "$out" | python3 -c "import json, sys; 
-          try:
-              d = json.load(sys.stdin); 
-              assert d['status']=='ok', f'bad status: {d}'
-          except json.JSONDecodeError:
-              print('Output is not valid JSON:', out)
-              sys.exit(1)"
+          printf '%s\n' "$out" | python3 -c 'import json, sys; d = json.load(sys.stdin); assert d.get("status") == "ok", f"bad status: {d}"'
           echo "health: ok"
       - name: Test system-info adapter
         run: |
