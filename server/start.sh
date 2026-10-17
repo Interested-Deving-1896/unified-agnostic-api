@@ -43,7 +43,7 @@ while [[ $# -gt 0 ]]; do
     --host)    UAA_HOST="$2";    shift 2 ;;
     --backend) UAA_BACKEND="$2"; shift 2 ;;
     --log)     UAA_LOG="$2";     shift 2 ;;
-    --toggles) UAA_TOGGLES="$2"; shift 2 ;;
+    --toggles) UAA_TOGGLES="$2"; UAA_TOGGLES_FILE="$2"; shift 2 ;;
     --routes)  EXTRA_ROUTES+=("$2"); shift 2 ;;
     --help|-h) grep '^#' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) warn "unknown argument: $1"; shift ;;
