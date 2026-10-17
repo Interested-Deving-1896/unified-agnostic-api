@@ -160,7 +160,7 @@ For adapter inputs, request/response helpers, route registration, and local test
 ## CI
 
 <!-- AI:start:ci -->
-The repository includes a GitHub Actions accessibility audit in [check-accessibility.yml](https://github.com/Interested-Deving-1896/unified-agnostic-api/actions/workflows/check-accessibility.yml). The workflow checks ownership coverage, README screen-reader compatibility, WCAG 2.1 AA HTML compliance, and generated audio/Braille accessibility artifacts. Run it from the repository's Actions tab to produce a report.
+The [CI workflow](.github/workflows/ci.yml) runs ShellCheck when shell-related files change, validates route configuration when config or workflow files change, and runs adapter smoke tests. The [Server Integration Test](.github/workflows/server-test.yml) workflow runs on a weekly schedule or manual dispatch; it starts the default HTTP backend and checks key endpoints.
 <!-- AI:end:ci -->
 
 ## Mirror chain
@@ -178,7 +178,7 @@ OpenOS-Project-OSP/unified-agnostic-api
 OpenOS-Project-Ecosystem-OOC/unified-agnostic-api
 ~~~
 
-The mirror chain is coordinated by [fork-sync-all](https://github.com/Interested-Deving-1896/fork-sync-all). Changes flow downstream automatically; direct commits made in the OSP or OOC mirrors are detected and opened as pull requests back to Interested-Deving-1896.
+The mirror chain is coordinated by [fork-sync-all](https://github.com/Interested-Deving-1896/fork-sync-all). Changes are synchronized downstream by the scheduled mirror workflows. Direct commits made in the OSP or OOC mirrors are detected and opened as pull requests back to Interested-Deving-1896.
 <!-- AI:end:mirror-chain -->
 
 ## Contributors
@@ -219,9 +219,7 @@ The project draws on ideas and patterns from several existing tools and projects
 ## Accessibility
 
 <!-- AI:start:accessibility -->
-This repository uses automated accessibility auditing through [check-accessibility.yml](https://github.com/Interested-Deving-1896/unified-agnostic-api/actions/workflows/check-accessibility.yml).
-
-The checks cover CODEOWNERS ownership coverage, README screen-reader compatibility, WCAG 2.1 AA HTML compliance, audio overview generation with espeak-ng, and Braille output with liblouis. Run the workflow from GitHub Actions to generate the report and accessibility artifacts. See the [W3C Web Content Accessibility Guidelines](https://www.w3.org/WAI/standards-guidelines/wcag/) for the underlying standard.
+No `accessibility-report.json` or dedicated `check-accessibility` workflow is currently present in this repository, so this README does not claim that an accessibility audit has passed. Check the repository's [Actions tab](https://github.com/Interested-Deving-1896/unified-agnostic-api/actions) for the checks that are available. See the [W3C Web Content Accessibility Guidelines](https://www.w3.org/WAI/standards-guidelines/wcag/) for accessibility guidance.
 <!-- AI:end:accessibility -->
 
 ## License
