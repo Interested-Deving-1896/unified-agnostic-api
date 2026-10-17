@@ -46,7 +46,7 @@ git clone https://github.com/Interested-Deving-1896/unified-agnostic-api.git
 cd unified-agnostic-api
 ~~~
 
-The CLI can be run directly with Bash; you do not need to install a global command to try it. Some adapters and server modes require additional tools or credentials, depending on which features you use. For the HTTP server, the default backend is `shell2http`; install it using the instructions in [msoap/shell2http](https://github.com/msoap/shell2http). The alternative `webhook` backend requires [adnanh/webhook](https://github.com/adnanh/webhook). CGI mode requires a compatible web server configured to execute the deployed CGI scripts.
+The CLI can be run directly with Bash; you do not need to install a global command to try it. **Python 3 and PyYAML are required to start the HTTP server**, because route manifests are merged and filtered by the Python route loader. Some adapters also require tools such as `curl`, `jq`, or `git`, and integrations may require provider credentials; install only the dependencies for the features you use. For the HTTP server, the default backend is `shell2http`; install it using the instructions in [msoap/shell2http](https://github.com/msoap/shell2http). The alternative `webhook` backend requires [adnanh/webhook](https://github.com/adnanh/webhook). CGI mode requires a compatible web server configured to execute the deployed CGI scripts.
 
 ## Usage
 
