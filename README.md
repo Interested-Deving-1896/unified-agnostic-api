@@ -122,6 +122,8 @@ The server and adapters are configured through environment variables and YAML fi
 | `UAA_AUTH` | unset | Optional bearer token used by protected routes |
 | `UAA_TOGGLES_FILE` | `config/toggles.yml` | Optional path to the feature-toggle configuration file |
 
+`UAA_TOGGLES_FILE` selects the feature-toggle YAML used to filter routes at startup and by adapter toggle helpers. If it is unset, the launcher also accepts the legacy `UAA_TOGGLES` variable; the default is `config/toggles.yml`.
+
 You can set variables inline for a single launch:
 
 ~~~bash
