@@ -30,7 +30,9 @@ UAA_PORT="${UAA_PORT:-8080}"
 UAA_HOST="${UAA_HOST:-0.0.0.0}"
 UAA_BACKEND="${UAA_BACKEND:-shell2http}"
 UAA_LOG="${UAA_LOG:-info}"
-UAA_TOGGLES="${UAA_TOGGLES:-$REPO_ROOT/config/toggles.yml}"
+# UAA_TOGGLES_FILE is canonical; keep UAA_TOGGLES as a backwards-compatible alias.
+UAA_TOGGLES_FILE="${UAA_TOGGLES_FILE:-${UAA_TOGGLES:-$REPO_ROOT/config/toggles.yml}}"
+UAA_TOGGLES="$UAA_TOGGLES_FILE"
 
 # Collect --routes arguments; default to config/routes.yml
 EXTRA_ROUTES=()
@@ -41,7 +43,7 @@ while [[ $# -gt 0 ]]; do
     --host)    UAA_HOST="$2";    shift 2 ;;
     --backend) UAA_BACKEND="$2"; shift 2 ;;
     --log)     UAA_LOG="$2";     shift 2 ;;
-    --toggles) UAA_TOGGLES="$2"; shift 2 ;;
+    --toggles) UAA_TOGGLES="$2"; UAA_TOGGLES_FILE="$2"; shift 2 ;;
     --routes)  EXTRA_ROUTES+=("$2"); shift 2 ;;
     --help|-h) grep '^#' "$0" | sed 's/^# \?//'; exit 0 ;;
     *) warn "unknown argument: $1"; shift ;;
@@ -51,7 +53,6 @@ done
 export UAA_PORT UAA_HOST UAA_LOG REPO_ROOT
 
 # Wire shared.sh toggle system — point at config/toggles.yml if it exists
-UAA_TOGGLES_FILE="${UAA_TOGGLES_FILE:-$REPO_ROOT/config/toggles.yml}"
 [[ -f "$UAA_TOGGLES_FILE" ]] && export UAA_TOGGLES_FILE || unset UAA_TOGGLES_FILE
 
 # ── Merge route manifests ─────────────────────────────────────────────────────
