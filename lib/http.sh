@@ -34,7 +34,7 @@ respond_text() {
 # respond_error STATUS MESSAGE
 respond_error() {
   local status="${1:-500}" msg="${2:-internal error}"
-  respond_json "$status" "{\"error\":$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$msg")}"
+  respond_json "$status" "{\\"error\\":$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$msg")}"
 }
 
 # respond_stream — write chunked lines (for streaming adapters)
@@ -50,27 +50,34 @@ _emit_response() {
   case "$UAA_BACKEND" in
     cgi)
       # CGI: emit HTTP headers then body
-      printf 'Status: %s\r\nContent-Type: %s\r\n\r\n%s\n' \
+      printf 'Status: %s\\r\\nContent-Type: %s\\r\\n\\r\\n%s\\n' \\
         "$status" "$content_type" "$body"
       ;;
     shell2http|webhook|*)
       # shell2http/webhook: just emit body; status via exit code convention
       # shell2http supports X-Status header for non-200
       if [[ "$status" != "200" ]]; then
-        printf 'X-Status: %s\n' "$status" >&2
+        printf 'X-Status: %s\\n' "$status" >&2
       fi
-      printf '%s\n' "$body"
+      printf '%s\\n' "$body"
       ;;
   esac
 }
 
-# auth_check — validate bearer token if UAA_AUTH is set
-# Returns 0 if auth passes, exits 401 if it fails.
+# auth_check — require a configured bearer token and validate it.
+# Protected adapters fail closed when UAA_AUTH is absent or empty.
+# A shared bearer token proves possession only; it is not operation approval.
 auth_check() {
-  [[ -z "${UAA_AUTH:-}" ]] && return 0
+  if [[ -z "${UAA_AUTH:-}" ]]; then
+    respond_error 503 "authentication is not configured"
+    exit 0
+  fi
+
   local provided="${HTTP_AUTHORIZATION:-${HTTP_X_API_KEY:-}}"
-  provided="${provided#Bearer }"
-  if [[ "$provided" != "$UAA_AUTH" ]]; then
+  if [[ "$provided" == "Bearer "* ]]; then
+    provided="${provided#Bearer }"
+  fi
+  if [[ -z "$provided" || "$provided" != "$UAA_AUTH" ]]; then
     respond_error 401 "unauthorized"
     exit 0
   fi
