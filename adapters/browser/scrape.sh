@@ -8,6 +8,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$REPO_ROOT/lib/adapter.sh"
 
+# Scraping is a network-capable operation and must not be exposed anonymously.
+auth_check
+
 body="$(request_body)"
 [[ -z "$body" ]] && { respond_error 400 "empty request body"; exit 0; }
 
@@ -21,8 +24,8 @@ rm -f "$tmp"
 [[ -z "$URL" ]] && { respond_error 400 "missing url"; exit 0; }
 
 # Fetch HTML
-HTML="$(curl -sfL --max-time 15 \
-  -A "Mozilla/5.0 (compatible; unified-agnostic-api/1.0)" \
+HTML="$(curl -sfL --max-time 15 \\
+  -A "Mozilla/5.0 (compatible; unified-agnostic-api/1.0)" \\
   "$URL" 2>/dev/null || echo "")"
 
 [[ -z "$HTML" ]] && { respond_error 502 "failed to fetch url"; exit 0; }
@@ -42,7 +45,7 @@ def strip_tags(h):
     h = re.sub(r'&lt;',   '<', h)
     h = re.sub(r'&gt;',   '>', h)
     h = re.sub(r'&quot;', '"', h)
-    h = re.sub(r'\s+', ' ', h).strip()
+    h = re.sub(r'\\s+', ' ', h).strip()
     return h
 
 if fmt == 'html':
