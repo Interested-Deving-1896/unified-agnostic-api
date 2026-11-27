@@ -56,8 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Validate routes.yml
-        run: python3 -c "import yaml; yaml.safe_load(open('config/routes.yml'))"
+      - name: Validate routes.yml and toggles.yml
+        run: python3 -c "import yaml; yaml.safe_load(open('config/routes.yml')); yaml.safe_load(open('config/toggles.yml'))"
       - name: Check all route scripts exist
         run: |
           python3 - config/routes.yml << 'PYEOF'
@@ -85,6 +85,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Make scripts executable
         run: find . -name '*.sh' -exec chmod +x {} \;
+      - name: Test server containment boundary
+        run: bash tests/test-server-containment.sh
       - name: Test health adapter
         run: |
           out=$(bash adapters/meta/health.sh)

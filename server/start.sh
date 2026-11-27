@@ -11,10 +11,10 @@
 #
 # Environment:
 #   UAA_PORT     — listen port (default: 8080)
-#   UAA_HOST     — listen host (default: 0.0.0.0)
+#   UAA_HOST     — listen host (default: 127.0.0.1; loopback only)
 #   UAA_BACKEND  — http backend: shell2http | cgi | webhook (default: shell2http)
 #   UAA_LOG      — log level: debug | info | warn (default: info)
-#   UAA_AUTH     — bearer token for auth (optional)
+#   UAA_AUTH     — bearer token; route-level HTTP enforcement is not yet verified
 #   UAA_TOGGLES  — path to toggles.yml (default: config/toggles.yml)
 
 set -euo pipefail
@@ -27,12 +27,23 @@ source "$REPO_ROOT/lib/shared.sh"
 source "$REPO_ROOT/lib/routes.sh"
 
 UAA_PORT="${UAA_PORT:-8080}"
-UAA_HOST="${UAA_HOST:-0.0.0.0}"
+UAA_HOST="${UAA_HOST:-127.0.0.1}"
 UAA_BACKEND="${UAA_BACKEND:-shell2http}"
 UAA_LOG="${UAA_LOG:-info}"
 # UAA_TOGGLES_FILE is canonical; keep UAA_TOGGLES as a backwards-compatible alias.
 UAA_TOGGLES_FILE="${UAA_TOGGLES_FILE:-${UAA_TOGGLES:-$REPO_ROOT/config/toggles.yml}}"
 UAA_TOGGLES="$UAA_TOGGLES_FILE"
+
+# Until every backend has a verified route-authentication boundary, do not
+# expose this server on a LAN or public interface. Local CLI invocation is
+# unaffected; this restriction applies only to the HTTP server launcher.
+case "$UAA_HOST" in
+  127.*|localhost|::1) ;;
+  *)
+    error "refusing non-loopback bind ($UAA_HOST): HTTP route authentication is not yet enforced consistently across backends"
+    exit 1
+    ;;
+esac
 
 # Collect --routes arguments; default to config/routes.yml
 EXTRA_ROUTES=()
@@ -49,6 +60,15 @@ while [[ $# -gt 0 ]]; do
     *) warn "unknown argument: $1"; shift ;;
   esac
 done
+
+# Re-check after command-line overrides.
+case "$UAA_HOST" in
+  127.*|localhost|::1) ;;
+  *)
+    error "refusing non-loopback bind ($UAA_HOST): HTTP route authentication is not yet enforced consistently across backends"
+    exit 1
+    ;;
+esac
 
 export UAA_PORT UAA_HOST UAA_LOG REPO_ROOT
 
@@ -67,7 +87,7 @@ merge_routes_files "$UAA_TOGGLES" "$MERGED_ROUTES" "${ALL_ROUTES[@]}"
 
 info "unified-agnostic-api server starting"
 info "  backend  : $UAA_BACKEND"
-info "  listen   : $UAA_HOST:$UAA_PORT"
+info "  listen   : $UAA_HOST:$UAA_PORT (loopback-only safety mode)"
 info "  root     : $REPO_ROOT"
 info "  routes   : ${#ALL_ROUTES[@]} file(s) merged"
 info "  toggles  : $UAA_TOGGLES"
