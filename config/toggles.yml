@@ -1,36 +1,14 @@
 # config/toggles.yml — UAA feature toggles
 #
-# Gates routes at server startup without removing them from routes.yml.
-# start.sh reads this file and skips any route whose toggle is disabled.
-#
-# Fields:
-#   enabled     — true (default) | false
-#   description — human-readable purpose
-#   affects     — list of route paths gated by this toggle (documentation only;
-#                 the server matches by the toggle name on each route entry)
-#
-# Usage in routes.yml:
-#   - path: /api/my-feature
-#     script: adapters/my-feature/list.sh
-#     method: GET
-#     toggle: my_feature      ← must match a key in this file
-#
-# Toggles not listed here default to enabled: true.
+# Routes with a disabled toggle are omitted from every HTTP backend at startup.
+# Toggles not listed here default to enabled; security-sensitive capabilities
+# must therefore be explicitly listed and disabled until their readiness gate passes.
 
-toggles: {}
-
-# Example:
-# toggles:
-#   experimental_ai:
-#     enabled: false
-#     description: Experimental AI completion endpoint
-#     affects:
-#       - /api/ai/complete
-#
-#   browser_automation:
-#     enabled: true
-#     description: Browser scrape and screenshot endpoints
-#     affects:
-#       - /api/browser/scrape
-#       - /api/browser/screenshot
-#       - /api/browser/automate
+toggles:
+  browser_capture:
+    enabled: false
+    description: Disabled until authentication, URL/SSRF policy, sandboxing, resource limits and fixture-only integration tests are verified
+    affects:
+      - /api/browser/scrape
+      - /api/browser/screenshot
+      - /api/browser/automate
